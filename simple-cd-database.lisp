@@ -25,7 +25,6 @@
   (loop (add-record (prompt-for-cd))
 	(if (not (y-or-n-p "Another? [y/n]: ")) (return))))
 
-
 (defun save-db (filename)
   (with-open-file (out filename
 		       :direction :output
@@ -41,13 +40,15 @@
 (defun select (selector-fn)
   (remove-if-not selector-fn *db*))
 
-(defun where (&key title artist rating (ripped nil ripped-p))
-  #'(lambda (cd)
-      (and
-       (if title (equal (getf cd :title) title) t)
-       (if artist (equal (getf cd :artist) artist) t)
-       (if rating (equal (getf cd :rating) rating) t)
-       (if ripped-p (equal (getf cd :ripped) ripped) t))))
+(defun make-comparison-expr (field value)
+  `(equal (getf cd ,field) ,value))
+
+(defun make-comparisons-list (fields)
+  (loop while fields
+        collecting (make-comparison-expr (pop fields) (pop fields))))
+
+(defmacro where (&rest clauses)
+  `#'(lambda (cd) (and ,@(make-compArisons-list clauses))))
 
 (defun update (selector-fn &key title artist rating (ripped nil ripped-p))
   (setf *db*
